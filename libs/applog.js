@@ -4,7 +4,7 @@
     var lib = {};
 
     /**
-     * Creates a Date object using passed integer representing values from 
+     * Creates a Date object using passed integer representing values from
      * year down to milliseconds. The 'month' value requires values from 1 to 12
      * (i.e. unlike JS Data constructor).
      */
@@ -27,7 +27,7 @@
         if (items.length === 2) {
             date = items[0].split('-');
             time = items[1].split(':');
-            time[2] = time[2].split(',');            
+            time[2] = time[2].split(',');
             millis = time[2][1];
             time[2] = time[2][0];
             if (millis === undefined) {
@@ -63,11 +63,11 @@
                 data = JSON.parse(rawData);
 
             } catch (e) {
-                data = {error: e};
+                data = {corrupted: true, error: e};
             }
 
         } else {
-            data = {};
+            data = {error: null};
         }
 
         function Record(data) {
@@ -77,7 +77,12 @@
         Record.prototype._metadata = {
             date : datetime,
             source : source,
-            type : type
+            type : type,
+            id : orzo.hash.sha1(rawData)
+        };
+
+        Record.prototype.getId = function () {
+            return this._metadata.id;
         };
 
         Record.prototype.getTimestamp = function () {
@@ -88,6 +93,13 @@
             return this._metadata.date;
         };
 
+        Record.prototype.getISODate = function () {
+            var d = this.getDate();
+            return orzo.sprintf('%02d-%02d-%02dT%02d:%02d:%02d,%s',
+                    d.getFullYear(), d.getMonth() + 1,  d.getDate(), d.getHours(),
+                    d.getMinutes(), d.getSeconds(), d.getMilliseconds());
+        }
+
         Record.prototype.getSource = function () {
             return this._metadata.source;
         };
@@ -97,7 +109,7 @@
         };
 
         Record.prototype.isOK = function () {
-            return !this.data.hasOwnProperty('error');
+            return !this.data.hasOwnProperty('corrupted');
         };
 
         Record.prototype.contains = function (s) {
@@ -123,7 +135,7 @@
      * Parses KonText applog record
      */
     lib.parseLine = function (line) {
-        //           2015-06-01 13:30:36,925 [QUERY] INFO: {... etc }
+        // 2015-06-01 13:30:36,925 [QUERY] INFO: {... etc }
         var srch = /(\d{4}-\d{2}-\d{2}\s+\d{2}:\d{2}:\d{2},\d{3})\s+\[([^\]]+)\]\s([A-Z]+):(.+)/
                 .exec(line);
 
