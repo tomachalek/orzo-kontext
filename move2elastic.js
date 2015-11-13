@@ -15,15 +15,17 @@
  */
 
 /// <reference path="./orzojs.d.ts" />
+/// <reference path="./libs/applog.d.ts" />
 
 (function () {
     'use strict';
 
     var applogParser = require('applog');
+    var rec2elastic = require('rec2elastic');
     var numMapWorkers = 2;
     var numReduceWorkers = 1;
     var BULK_URL = orzo.sprintf('http://localhost:9200/kontext/_bulk');
-    var CHUNK_SIZE = 1000;
+    var CHUNK_SIZE = 20000;
 
     dataChunks(numMapWorkers, function (idx) {
         return orzo.directoryReader(env.inputArgs[0], idx);
@@ -76,50 +78,13 @@
 
 
     map(function (item) {
-        var corpname;
-        var data = {};
-
-        try {
-            corpname = item.data.params && item.data.params.corpname ? decodeURIComponent(item.data.params.corpname) : null;
-
-        } catch (e) {
-            data.error = e;
-            corpname = item.data.params.corpname;
-        }
-
-        data.datetime = item.getISODate();
-        data.userId = item.data.user_id;
-        data.procTime = item.data.proc_time;
-        data.action = item.data.action;
-        data.corpname = corpname;
-
-        var meta = {
-            index : {
-                _id : orzo.hash.sha1(JSON.stringify(data)),
-                _type : 'applog'
-            }
-        };
-        emit(data.datetime[data.datetime.length - 1],
-            [JSON.stringify(meta), JSON.stringify(data)]);
+        var rec = rec2elastic.convertRecord(item);
+        emit(rec.datetime, [rec.metadata, rec.data]);
 	});
 
-    function insertRecords(data) {
-        // orzo.print(buff);
-        orzo.rest.post(BULK_URL, data.trim());
-    }
-
     reduce(numReduceWorkers, function (key,  values) {
-        var buff = '';
-        values.forEach(function (item, i) {
-            if (i > 0 && i % CHUNK_SIZE === 0) {
-                insertRecords(buff);
-                buff = '';
-            }
-            buff += '\n' + item.join('\n');
-        });
-        if (buff) {
-            insertRecords(buff);
-        }
+        var bulkInsert = new rec2elastic.BulkInsert(BULK_URL, CHUNK_SIZE, true);
+        bulkInsert.insertValues(values);
     });
 
     finish(function (results) {

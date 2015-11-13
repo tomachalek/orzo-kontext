@@ -65,18 +65,76 @@
 
     /**
      *
-     * @param datetime
-     * @param source
-     * @param type
-     * @param rawData
-     * @returns {Record}
      */
-    function createRecord(datetime, source, type, rawData) {
+    function containsAll(str) {
+        var srch = Array.prototype.slice.call(arguments, 1);
+        return srch.reduce(function (prev, curr) {
+            return prev && str.indexOf(curr) > -1;
+        }, true);
+    }
+
+    /**
+     *
+     */
+    lib.agentIsBot = function (agentStr) {
+        /*
+        Mozilla/5.0 (compatible; Googlebot/2.1; +http://www.google.com/bot.html)
+        Mozilla/5.0 (compatible; AhrefsBot/5.0; +http://ahrefs.com/robot/)
+        Mozilla/5.0 (compatible; YandexBot/3.0; +http://yandex.com/bots)
+        Mozilla/5.0 (compatible; Yahoo! Slurp; http://help.yahoo.com/help/us/ysearch/slurp)
+        Mozilla/5.0 (compatible; Baiduspider/2.0; +http://www.baidu.com/search/spider.html)
+        Mozilla/5.0 (compatible; SeznamBot/3.2; +http://fulltext.sblog.cz/)
+        Mozilla/5.0 (compatible; bingbot/2.0; +http://www.bing.com/bingbot.htm)
+        /*/
+        agentStr = agentStr ? agentStr.toLowerCase() : '';
+        return containsAll(agentStr, 'googlebot')
+            || containsAll(agentStr, 'ahrefsbot')
+            || containsAll(agentStr, 'yandexbot')
+            || containsAll(agentStr, 'yahoo', 'slurp')
+            || containsAll(agentStr, 'baiduspider')
+            || containsAll(agentStr, 'seznambot')
+            || containsAll(agentStr, 'bingbot');
+    }
+
+    /**
+     *
+     */
+    lib.agentIsMonitor = function (agentStr) {
+        /*
+        Python-urllib/2.7
+        Zabbix-test
+        */
+        agentStr = agentStr ? agentStr.toLowerCase() : '';
+        return containsAll(agentStr, 'Python-urllib/2.7')
+            || containsAll(agentStr, 'Zabbix-test');
+    }
+
+    /**
+     *
+     */
+    lib.dateToISO = function (d) {
+        return orzo.sprintf('%02d-%02d-%02dT%02d:%02d:%02d,%s',
+            d.getFullYear(), d.getMonth() + 1,  d.getDate(), d.getHours(),
+            d.getMinutes(), d.getSeconds(), d.getMilliseconds());
+    };
+
+    /**
+     *
+     */
+    lib.createRecord = function (datetime, source, type, jsonData) {
         var data;
 
         if (type === 'INFO') {
             try {
-                data = JSON.parse(rawData);
+                if (typeof jsonData === 'string') {
+                    data = JSON.parse(jsonData);
+
+                } else if (typeof jsonData === 'object') {
+                    data = jsonData;
+
+                } else {
+                    throw new Error('Invalid rawData object type: ' + (typeof jsonData));
+                }
 
             } catch (e) {
                 data = {corrupted: true, error: e};
@@ -90,11 +148,20 @@
             this.data = data;
         }
 
+        Record.prototype.toString = function () {
+            var desc = {
+                'date': this.getISODate(),
+                'type': this.getType(),
+                'data': this.data
+            };
+            return orzo.toJson(desc);
+        };
+
         Record.prototype._metadata = {
             date : datetime,
             source : source,
             type : type,
-            id : orzo.hash.sha1(rawData)
+            id : orzo.hash.sha1(jsonData)
         };
 
         Record.prototype.getId = function () {
@@ -110,10 +177,7 @@
         };
 
         Record.prototype.getISODate = function () {
-            var d = this.getDate();
-            return orzo.sprintf('%02d-%02d-%02dT%02d:%02d:%02d,%s',
-                    d.getFullYear(), d.getMonth() + 1,  d.getDate(), d.getHours(),
-                    d.getMinutes(), d.getSeconds(), d.getMilliseconds());
+            return lib.dateToISO(this.getDate());
         }
 
         Record.prototype.getSource = function () {
@@ -132,6 +196,13 @@
             return Boolean(RegExp(s).exec(this.getSource()));
         };
 
+        Record.prototype.getUserAgent = function () {
+            if (this.data && this.data.request) {
+                return this.data.request['HTTP_USER_AGENT'];
+            }
+            return null;
+        }
+
         Record.prototype.isOlderThan = function (dt) {
             var timestamp;
 
@@ -145,18 +216,21 @@
         };
 
         return new Record(data);
-    }
+    };
 
     /**
      * Parses KonText applog record
      */
     lib.parseLine = function (line) {
-        // 2015-06-01 13:30:36,925 [QUERY] INFO: {... etc }
+        /*
+        parses KonText applog string like this one:
+        2015-06-01 13:30:36,925 [QUERY] INFO: {... JSON object ... }
+        */
         var srch = /(\d{4}-\d{2}-\d{2}\s+\d{2}:\d{2}:\d{2},\d{3})\s+\[([^\]]+)\]\s([A-Z]+):(.+)/
                 .exec(line);
 
         if (srch) {
-            return createRecord(
+            return lib.createRecord(
                 parseDatetimeString(srch[1]),
                 srch[2],
                 srch[3],
