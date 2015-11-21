@@ -97,7 +97,7 @@ declare module "applog" {
      * Tests whether the provided user-agent string matches any of
      * known web spiders
      */
-    export function agetIsBot(agentStr:string):boolean;
+    export function agentIsBot(agentStr:string):boolean;
 
     /**
      * Tests whether the provided user-agent string matches any of

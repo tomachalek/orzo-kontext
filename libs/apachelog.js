@@ -53,7 +53,7 @@
         if (srch) {
             return srch[1] ? srch[1] : '/';
         }
-        return false;
+        return null;
     }
 
     function filterCorpusParams(params) {
