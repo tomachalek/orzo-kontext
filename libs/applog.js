@@ -201,7 +201,14 @@
                 return this.data.request['HTTP_USER_AGENT'];
             }
             return null;
-        }
+        };
+
+        Record.prototype.getRemoteAddr = function () {
+            if (this.data && this.data.request) {
+                return this.data.request['REMOTE_ADDR'];
+            }
+            return null;
+        };
 
         Record.prototype.isOlderThan = function (dt) {
             var timestamp;
