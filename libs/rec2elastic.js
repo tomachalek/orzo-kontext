@@ -31,29 +31,53 @@
         };
     };
 
+    function isEntryQuery(action) {
+        return ['first', 'wordlist'].indexOf(action) >= 0;
+    }
+
+    function importCorpname(item) {
+        var corpname,
+            limited;
+
+        if (item.data.params && item.data.params.corpname) {
+            corpname = item.data.params.corpname;
+            corpname = decodeURIComponent(corpname);
+            corpname = corpname.split(';')[0];
+            if (corpname.indexOf('omezeni/') === 0) {
+                corpname = corpname.substr('omezeni/'.length);
+                limited = true;
+
+            } else {
+                limited = false;
+            }
+            return [corpname, limited];
+
+        } else {
+            return [null, null];
+        }
+    }
+
     /**
      * Converts an applog record to CNK's internal format
      * designed for storing an application request information.
      */
-    lib.convertRecord = function (item) {
-        var corpname;
+    lib.convertRecord = function (item, type) {
+        var corpnameElms;
         var data = {};
 
-        try {
-            corpname = item.data.params && item.data.params.corpname ? decodeURIComponent(item.data.params.corpname) : null;
-
-        } catch (e) {
-            data.error = e;
-            corpname = item.data.params.corpname;
-        }
+        corpnameElms = importCorpname(item);
 
         data.datetime = item.getISODate();
         data.userId = item.data.user_id;
         data.procTime = item.data.proc_time;
         data.action = item.data.action;
-        data.corpname = corpname;
+        data.entryQuery = isEntryQuery(data.action);
+        data.corpname = corpnameElms[0];
+        data.limited = corpnameElms[1];
+        data.userAgent = item.getUserAgent();
+        data.ipAddress = item.getRemoteAddr();
 
-        var meta = lib.createMetaRecord(data);
+        var meta = lib.createMetaRecord(data, type);
 
         return {
             datetime: data.datetime[data.datetime.length - 1],
