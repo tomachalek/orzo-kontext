@@ -19,6 +19,22 @@
 
     var lib = {};
 
+    /**
+     * Creates a meta-data record for bulk insert
+     */
+    lib.createMetaRecord = function (item, type) {
+        return {
+            index : {
+                _id : orzo.hash.sha1(orzo.toJson(item)),
+                _type : type
+            }
+        };
+    };
+
+    /**
+     * Converts an applog record to CNK's internal format
+     * designed for storing an application request information.
+     */
     lib.convertRecord = function (item) {
         var corpname;
         var data = {};
@@ -37,12 +53,7 @@
         data.action = item.data.action;
         data.corpname = corpname;
 
-        var meta = {
-            index : {
-                _id : orzo.hash.sha1(JSON.stringify(data)),
-                _type : 'applog'
-            }
-        };
+        var meta = lib.createMetaRecord(data);
 
         return {
             datetime: data.datetime[data.datetime.length - 1],
@@ -51,6 +62,9 @@
         };
     };
 
+    /**
+     * Bulk insert helper object
+     */
     function BulkInsert(url, itemsPerChunk, dryRun) {
         this._url = url;
         this._itemsPerChunk = itemsPerChunk;
@@ -62,21 +76,21 @@
             orzo.rest.post(this._url, data.trim());
 
         } else {
-            orzo.printf('>> %s\n', data);
+            orzo.printf('---> %s\n', data);
         }
     };
 
+    /**
+     * Inserts list of values
+     */
     BulkInsert.prototype.insertValues = function (values) {
         var buff = '';
         var self = this;
 
         values.forEach(function (item, i) {
-            orzo.print('>>>>>>>> ' + item);
             if (i > 0 && i % self._itemsPerChunk === 0) {
-                orzo.print('fuck_______');
                 self._insert(buff);
                 buff = '';
-                orzo.print('fuck_______222');
             }
             buff += '\n' + item.join('\n');
         });

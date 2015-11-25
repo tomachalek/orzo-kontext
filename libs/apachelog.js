@@ -187,7 +187,7 @@
                 applogItem,
                 record;
 
-            pathPrefix = pathPrefix ? pathPrefix : '';
+            pathPrefix = pathPrefix || '';
 
             if (line) {
                 parsedLine = lineParser(line);
@@ -210,7 +210,7 @@
                         }
                         record = applog.createRecord(
                             dateParser(parsedLine.time),
-                            line,
+                            null,  // there is no source Python module available
                             'INFO',
                             applogItem
                         );

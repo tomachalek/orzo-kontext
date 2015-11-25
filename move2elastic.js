@@ -47,27 +47,25 @@
                     continue;
                 }
                 parsed = applogParser.parseLine(line);
-                if (parsed) {
-                    if (parsed.isOK()) {
-                        if (parsed.getType() === 'INFO') {
-                            map(parsed);
+                if (parsed && parsed.isOK()) {
+                    if (parsed.getType() === 'INFO') {
+                        map(parsed);
 
-                        } else if (parsed.getType() === 'ERROR'
-                                || parsed.getType() === 'WARNING') {
-                            while (fr.hasNext()) {
-                                line = fr.next().trim();
-                                if (!line) {
-                                    continue;
-                                }
-                                parsed2 = applogParser.parseLine(line);
-                                if (parsed2) {
-                                    parsed.data.error = lastErrLine;
-                                    map(parsed2);
-                                    break;
+                    } else if (parsed.getType() === 'ERROR'
+                            || parsed.getType() === 'WARNING') {
+                        while (fr.hasNext()) {
+                            line = fr.next().trim();
+                            if (!line) {
+                                continue;
+                            }
+                            parsed2 = applogParser.parseLine(line);
+                            if (parsed2) {
+                                parsed.data.error = lastErrLine;
+                                map(parsed2);
+                                break;
 
-                                } else {
-                                    lastErrLine = line;
-                                }
+                            } else {
+                                lastErrLine = line;
                             }
                         }
                     }

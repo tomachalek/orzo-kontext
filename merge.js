@@ -16,7 +16,6 @@ var applog = require('applog');
 var parseApacheLine = apacheParser.createParser(apacheParser.lineParsers.parseLine,
         apacheParser.dateParsers.parseDMYDatetime);
 
-
 var APPLOG_FILE = '/home/tomas/work/data/kontext-logs/test/app-clean.log';
 var APACHE_LOG_FILE = '/home/tomas/work/data/kontext-logs/test/apache-clean.log';
 var OUTPUT_FILE = '/home/tomas/work/orzo-kontext/output.txt';
@@ -87,6 +86,16 @@ function fetchAction(item1, item2) {
     return null; // this should not happen
 }
 
+function fetchProcTime(item1, item2) {
+    if (item1.data && item1.data['proc_time']) {
+        return item1.data['proc_time'];
+
+    } else if (item2.data && item2.data['proc_time']) {
+        return item2.data['proc_time'];
+    }
+    return null;
+}
+
 function fetchCorpname(item1, item2) {
     var corpname = null,
         limited = null;
@@ -147,7 +156,7 @@ function mergeItems(item1, item2) {
         corpname: corpnameElms[0],
         limited: corpnameElms[1],
         userAgent: fetchUserAgent(item1, item2),
-        _type: 'kontext'
+        procTime: fetchProcTime(item1, item2)
     };
 }
 
