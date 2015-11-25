@@ -87,6 +87,27 @@ function fetchAction(item1, item2) {
     return null; // this should not happen
 }
 
+function fetchCorpname(item1, item2) {
+    var corpname = null,
+        limited = null;
+
+    if (item1.data && item1.data['params']) {
+        corpname = item1.data['params']['corpname'] || null;
+        if (typeof corpname === 'string') {
+            corpname = decodeURIComponent(corpname);
+            corpname = corpname.split(';')[0];
+            if (corpname.indexOf('omezeni/') === 0) {
+                corpname = corpname.substr('omezeni/'.length);
+                limited = true;
+
+            } else {
+                limited = false;
+            }
+        }
+    }
+    return [corpname, limited];
+}
+
 function fetchIp(item1, item2) {
     if (item1.getRemoteAddr()) {
         return item1.getRemoteAddr();
@@ -115,16 +136,19 @@ function createFakeItem() {
 
 function mergeItems(item1, item2) {
     var action = fetchAction(item1, item2),
-        entryQuery = isEntryQuery(action);
+        entryQuery = isEntryQuery(action),
+        corpnameElms = fetchCorpname(item1, item2);
     return {
         datetime: item1.getISODate(), // + timezone
         userId: fetchUserId(item1, item2),
         entryQuery: entryQuery,
         ipAddress: fetchIp(item1, item2),
         action: fetchAction(item1, item2),
+        corpname: corpnameElms[0],
+        limited: corpnameElms[1],
         userAgent: fetchUserAgent(item1, item2),
         _type: 'kontext'
-    }
+    };
 }
 
 
