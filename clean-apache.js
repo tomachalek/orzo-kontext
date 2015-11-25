@@ -21,8 +21,8 @@ function agentIsMonitor(agentStr) {
     Zabbix-test
     */
     agentStr = agentStr ? agentStr.toLowerCase() : '';
-    return containsAll(agentStr, 'Python-urllib/2.7')
-        || containsAll(agentStr, 'Zabbix-test');
+    return containsAll(agentStr, 'python-urllib/2.7')
+        || containsAll(agentStr, 'zabbix-test');
 }
 
 /**
