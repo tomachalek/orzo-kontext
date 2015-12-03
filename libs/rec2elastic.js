@@ -68,6 +68,7 @@
         corpnameElms = importCorpname(item);
 
         data.datetime = item.getISODate();
+        data.type = type;
         data.userId = item.data.user_id;
         data.procTime = item.data.proc_time;
         data.action = item.data.action;

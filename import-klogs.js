@@ -1,20 +1,52 @@
 /*
  * Extract start and finish dates
+ *
+ * config:
+ * {
+ *   "srcDir": "...",
+ *   "bulkUrl": "...",
+ *   "chunkSize": 50,
+ *   "defaultCheckInterval": 86400,
+ *   "workLogPath": "...",
+ *   "numApplyWorkers": 4,
+ *   "numReduceWorkers": 1
+ * }
+ *
  */
 
 /// <ref path="./orzojs.d.ts" />
 
 var applog = require('applog');
 var rec2elastic = require('rec2elastic');
-
-var srcDir = 'd:/work/data/Kontext-logs/app2015/sub';
-
-var BULK_URL = orzo.sprintf('http://localhost:9200/kontext/_bulk');
-var CHUNK_SIZE = 50;
-var FROM_DATE = new Date(2015, 11 - 1, 4, 0, 0, 0);
-var TO_DATE = new Date(2015, 11 - 1, 4, 23, 59, 59);
+var conf = orzo.readJsonFile(env.inputArgs[0]);
+var TO_DATE = new Date(env.startTimestamp * 1000);
 
 
+function loadWorklog() {
+    if (orzo.fs.exists(conf.workLogPath)) {
+        return orzo.readTextFile(conf.workLogPath).trim().split(/\s+/);
+
+    } else {
+        return [TO_DATE.getTime() / 1000 - conf.defaultCheckInterval];
+    }
+}
+
+var WORKLOG = loadWorklog();
+var FROM_DATE = new Date(WORKLOG[WORKLOG.length - 1] * 1000);
+
+function saveWorklog(workLog) {
+    doWith(
+        orzo.fileWriter(conf.workLogPath),
+        function (fw) {
+            workLog.forEach(function (item) {
+                fw.writeln(item);
+            });
+        },
+        function (err) {
+            orzo.print('error: ' + err);
+        }
+    );
+}
 
 function containsAll(str) {
     var srch = Array.prototype.slice.call(arguments, 1);
@@ -46,6 +78,7 @@ function agentIsBot(agentStr) {
     Mozilla/5.0 (compatible; Baiduspider/2.0; +http://www.baidu.com/search/spider.html)
     Mozilla/5.0 (compatible; SeznamBot/3.2; +http://fulltext.sblog.cz/)
     Mozilla/5.0 (compatible; bingbot/2.0; +http://www.bing.com/bingbot.htm)
+    Mozilla/5.0 (compatible; MegaIndex.ru/2.0; +http://megaindex.com/crawler)
     */
     agentStr = agentStr ? agentStr.toLowerCase() : '';
     return containsAll(agentStr, 'googlebot')
@@ -54,7 +87,8 @@ function agentIsBot(agentStr) {
         || containsAll(agentStr, 'yahoo', 'slurp')
         || containsAll(agentStr, 'baiduspider')
         || containsAll(agentStr, 'seznambot')
-        || containsAll(agentStr, 'bingbot');
+        || containsAll(agentStr, 'bingbot')
+        || containsAll(agentStr, 'megaindex.ru');
 }
 
 
@@ -100,8 +134,8 @@ function rangeMatch(from, to) {
 }
 
 
-dataChunks(4, function (idx) {
-    return orzo.directoryReader(srcDir, idx);
+dataChunks(conf.numApplyWorkers, function (idx) {
+    return orzo.directoryReader(conf.srcDir, idx);
 });
 
 
@@ -157,14 +191,15 @@ map(function (item) {
 });
 
 
-reduce(1, function (key, values) {
+reduce(conf.numReduceWorkers, function (key, values) {
     if (key === 'result') {
-        var bulkInsert = new rec2elastic.BulkInsert(BULK_URL, CHUNK_SIZE, true);
+        var bulkInsert = new rec2elastic.BulkInsert(conf.bulkUrl, conf.chunkSize, true);
         bulkInsert.insertValues(values);
     }
 });
 
 
 finish(function (results) {
-
+    WORKLOG.push(TO_DATE.getTime() / 1000);
+    saveWorklog(WORKLOG);
 });
