@@ -18,35 +18,12 @@
 
 var applog = require('applog');
 var rec2elastic = require('rec2elastic');
+var wl = require('worklog');
+
 var conf = orzo.readJsonFile(env.inputArgs[0]);
-var TO_DATE = new Date(env.startTimestamp * 1000);
+var worklog = new wl.Worklog(conf['tweets']['worklogPath'],
+        new Date(env.startTimestamp * 1000), 86400);
 
-
-function loadWorklog() {
-    if (orzo.fs.exists(conf.workLogPath)) {
-        return orzo.readTextFile(conf.workLogPath).trim().split(/\s+/);
-
-    } else {
-        return [TO_DATE.getTime() / 1000 - conf.defaultCheckInterval];
-    }
-}
-
-var WORKLOG = loadWorklog();
-var FROM_DATE = new Date(WORKLOG[WORKLOG.length - 1] * 1000);
-
-function saveWorklog(workLog) {
-    doWith(
-        orzo.fileWriter(conf.workLogPath),
-        function (fw) {
-            workLog.forEach(function (item) {
-                fw.writeln(item);
-            });
-        },
-        function (err) {
-            orzo.print('error: ' + err);
-        }
-    );
-}
 
 function containsAll(str) {
     var srch = Array.prototype.slice.call(arguments, 1);
@@ -158,8 +135,7 @@ applyItems(function (filePaths, map) {
 
 
 function isInRange(item) {
-    return item.getDate().getTime() >= FROM_DATE.getTime()
-            && item.getDate().getTime() <= TO_DATE.getTime();
+    return item.getDate().getTime() / 1000 >= worklog.getLatestTimestamp();
 }
 
 
@@ -200,6 +176,5 @@ reduce(conf.numReduceWorkers, function (key, values) {
 
 
 finish(function (results) {
-    WORKLOG.push(TO_DATE.getTime() / 1000);
-    saveWorklog(WORKLOG);
+    worklog.close();
 });
