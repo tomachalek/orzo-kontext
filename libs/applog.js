@@ -106,7 +106,12 @@
         agentStr = agentStr ? agentStr.toLowerCase() : '';
         return containsAll(agentStr, 'python-urllib/2.7')
             || containsAll(agentStr, 'zabbix-test');
-    }
+    };
+
+    lib.agentIsHuman = function (parsed) {
+        return !lib.agentIsMonitor(parsed.getUserAgent())
+                && !lib.agentIsBot(parsed.getUserAgent());
+    };
 
     /**
      *

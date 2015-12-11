@@ -14,7 +14,11 @@
  * limitations under the License.
  */
 
+/// <reference path="./applog.d.ts" />
+
 declare module "worklog" {
+
+    import applog = require('applog');
 
     export interface Worklog {
 
@@ -36,4 +40,17 @@ declare module "worklog" {
          */
         getLatestTimestamp():number;
     }
+
+    /**
+     * Tests whether the provided configuration object (typically, a parsed JSON)
+     * contains all the necessary items.
+     */
+    export function validateConf(conf:{[key:string]:any});
+
+    /**
+     * Tests whether the provided file falls into a range given by
+     * interval [fromTimestamp...]
+     */
+    export function fileIsInRange(filePath:string, fromTimestamp:number,
+            parseFn:(line:string)=>applog.Record);
 }

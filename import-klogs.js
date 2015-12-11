@@ -20,47 +20,11 @@
 
 var applog = require('applog');
 var rec2elastic = require('rec2elastic');
-var conf = validateConf(orzo.readJsonFile(env.inputArgs[0]));
 var proc = require('processing');
+var conf = proc.validateConf(orzo.readJsonFile(env.inputArgs[0]));
 var worklog = new proc.Worklog(conf['workLogPath'],
         new Date(env.startTimestamp * 1000), 86400);
 var dryRun = getAttr(conf, 'dryRun', true);
-
-
-function validateConf(c) {
-    var props = ['srcDir', 'archivePath', 'bulkUrl', 'chunkSize', 'defaultCheckInterval',
-                 'workLogPath'];
-    props.forEach(function (item) {
-       if (c[item] === undefined) {
-           throw new Error(orzo.sprintf('Missing configuration item "%s"', item));
-       }
-    });
-    return c;
-}
-
-function fileIsInRange(filePath) {
-    var reader = orzo.reversedFileReader(filePath);
-    var lastLine = null;
-    var parsed = null;
-    var ans = false;
-    while (reader.hasNext()) {
-        lastLine = reader.next();
-        if (lastLine) {
-            parsed = applog.parseLine(lastLine);
-            if (parsed && parsed.isOK()) {
-                if (parsed.getDate().getTime() / 1000 < worklog.getLatestTimestamp()) {
-                    break;
-
-                } else {
-                    ans = true;
-                    break;
-                }
-            }
-        }
-    }
-    reader.close();
-    return ans;
-}
 
 
 dataChunks(getAttr(conf, 'numApplyWorkers', 1), function (idx) {
@@ -74,7 +38,7 @@ applyItems(function (filePaths, map) {
     while (filePaths.hasNext()) {
         currPath = filePaths.next();
 
-        if (!fileIsInRange(currPath)) {
+        if (!proc.fileIsInRange(currPath, worklog.getLatestTimestamp(), applog.parseLine)) {
             orzo.fs.moveFile(currPath, conf.archivePath);
 
         } else {
@@ -88,11 +52,6 @@ function isInRange(item) {
     return item.getDate().getTime() / 1000 >= worklog.getLatestTimestamp();
 }
 
-function isHuman(parsed) {
-    return !applog.agentIsMonitor(parsed.getUserAgent())
-            && !applog.agentIsBot(parsed.getUserAgent());
-}
-
 
 map(function (item) {
     doWith(
@@ -103,7 +62,7 @@ map(function (item) {
 
             while (fr.hasNext()) {
                 parsed = applog.parseLine(fr.next());
-                if (parsed && parsed.isOK() && isInRange(parsed) && isHuman(parsed)) {
+                if (parsed && parsed.isOK() && isInRange(parsed) && applog.agentIsHuman(parsed)) {
                     converted = rec2elastic.convertRecord(parsed, 'kontext');
                     emit('result', [converted.metadata, converted.data]);
                 }
