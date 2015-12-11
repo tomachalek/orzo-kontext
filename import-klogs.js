@@ -20,9 +20,9 @@
 
 var applog = require('applog');
 var rec2elastic = require('rec2elastic');
-var wl = require('worklog');
 var conf = validateConf(orzo.readJsonFile(env.inputArgs[0]));
-var worklog = new wl.Worklog(conf['workLogPath'],
+var proc = require('processing');
+var worklog = new proc.Worklog(conf['workLogPath'],
         new Date(env.startTimestamp * 1000), 86400);
 var dryRun = getAttr(conf, 'dryRun', true);
 
