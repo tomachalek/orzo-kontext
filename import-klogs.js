@@ -21,11 +21,22 @@
 var applog = require('applog');
 var rec2elastic = require('rec2elastic');
 var wl = require('worklog');
-
-var conf = orzo.readJsonFile(env.inputArgs[0]);
+var conf = validateConf(orzo.readJsonFile(env.inputArgs[0]));
 var worklog = new wl.Worklog(conf['workLogPath'],
         new Date(env.startTimestamp * 1000), 86400);
 var dryRun = getAttr(conf, 'dryRun', true);
+
+
+function validateConf(c) {
+    var props = ['srcDir', 'archivePath', 'bulkUrl', 'chunkSize', 'defaultCheckInterval',
+                 'workLogPath'];
+    props.forEach(function (item) {
+       if (c[item] === undefined) {
+           throw new Error(orzo.sprintf('Missing configuration item "%s"', item));
+       }
+    });
+    return c;
+}
 
 
 function containsAll(str) {
@@ -97,7 +108,7 @@ function fileIsInRange(filePath) {
 }
 
 
-dataChunks(conf.numApplyWorkers, function (idx) {
+dataChunks(getAttr(conf, 'numApplyWorkers', 1), function (idx) {
     return orzo.directoryReader(conf.srcDir, idx);
 });
 
@@ -151,7 +162,7 @@ map(function (item) {
 });
 
 
-reduce(conf.numReduceWorkers, function (key, values) {
+reduce(getAttr(conf, 'numReduceWorkers', 1), function (key, values) {
     if (key === 'result') {
         var bulkInsert = new rec2elastic.BulkInsert(conf.bulkUrl, conf.chunkSize, dryRun);
         bulkInsert.setPrintInserts(true);
