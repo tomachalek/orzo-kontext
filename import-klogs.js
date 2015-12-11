@@ -3,13 +3,15 @@
  *
  * config:
  * {
- *   "srcDir": "...",
- *   "bulkUrl": "...",
- *   "chunkSize": 50,
- *   "defaultCheckInterval": 86400,
- *   "workLogPath": "...",
- *   "numApplyWorkers": 4,
- *   "numReduceWorkers": 1
+    "srcDir": ...,
+    "archivePath": ...,
+    "bulkUrl": ...,
+    "chunkSize": ...,
+    "defaultCheckInterval": ...,
+    "workLogPath": ...,
+    "numApplyWorkers": ...,
+    "numReduceWorkers": ...,
+    "dryRun": true/false
  * }
  *
  */
@@ -21,8 +23,9 @@ var rec2elastic = require('rec2elastic');
 var wl = require('worklog');
 
 var conf = orzo.readJsonFile(env.inputArgs[0]);
-var worklog = new wl.Worklog(conf['tweets']['worklogPath'],
+var worklog = new wl.Worklog(conf['workLogPath'],
         new Date(env.startTimestamp * 1000), 86400);
+var dryRun = getAttr(conf, 'dryRun', true);
 
 
 function containsAll(str) {
@@ -69,45 +72,28 @@ function agentIsBot(agentStr) {
 }
 
 
-function getFileRange(fileReader) {
-    var first = null,
-        testLast = null,
-        last = null,
-        line;
+function fileIsInRange(filePath) {
+    var reader = orzo.reversedFileReader(filePath);
+    var lastLine = null;
+    var parsed = null;
+    var ans = false;
+    while (reader.hasNext()) {
+        lastLine = reader.next();
+        if (lastLine) {
+            parsed = applog.parseLine(lastLine);
+            if (parsed && parsed.isOK()) {
+                if (parsed.getDate().getTime() / 1000 < worklog.getLatestTimestamp()) {
+                    break;
 
-    while ((!first || !first.isOK()) && fileReader.hasNext()) {
-        first = applog.parseLine(fileReader.next());
-    }
-
-    if (!first || first && first.getDate().getTime() > TO_DATE.getTime()) {
-        orzo.print('ignoring (quickly): ' + fileReader.path);
-        return null;
-    }
-
-    while (fileReader.hasNext()) {
-        testLast = applog.parseLine(fileReader.next());
-        if (testLast && testLast.isOK()) {
-            last = testLast;
+                } else {
+                    ans = true;
+                    break;
+                }
+            }
         }
     }
-    if (!last) {
-        last = first;
-    }
-
-    if (last && last.getDate().getTime() < FROM_DATE.getTime()) {
-        orzo.print('ignoring: ' + fileReader.path);
-        return null;
-    }
-
-    return fileReader.path;
-}
-
-
-function rangeMatch(from, to) {
-    if (to.getTime() < FROM_DATE.getTime() || from.getTime() > TO_DATE.getTime()) {
-        return false;
-    }
-    return true;
+    reader.close();
+    return ans;
 }
 
 
@@ -117,19 +103,17 @@ dataChunks(conf.numApplyWorkers, function (idx) {
 
 
 applyItems(function (filePaths, map) {
+    var currPath;
+
     while (filePaths.hasNext()) {
-        doWith(
-            orzo.fileReader(filePaths.next()),
-            function (fr) {
-                var ans = getFileRange(fr);
-                if (ans) {
-                    map(fr.path);
-                }
-            },
-            function (err) {
-                orzo.print('error: ' + err);
-            }
-        );
+        currPath = filePaths.next();
+
+        if (!fileIsInRange(currPath)) {
+            orzo.fs.moveFile(currPath, conf.archivePath);
+
+        } else {
+            map(currPath);
+        }
     }
 });
 
@@ -169,7 +153,8 @@ map(function (item) {
 
 reduce(conf.numReduceWorkers, function (key, values) {
     if (key === 'result') {
-        var bulkInsert = new rec2elastic.BulkInsert(conf.bulkUrl, conf.chunkSize, true);
+        var bulkInsert = new rec2elastic.BulkInsert(conf.bulkUrl, conf.chunkSize, dryRun);
+        bulkInsert.setPrintInserts(true);
         bulkInsert.insertValues(values);
     }
 });
