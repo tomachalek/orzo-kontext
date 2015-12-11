@@ -14,8 +14,6 @@
  * limitations under the License.
  */
 
-/// <reference path="./worklog.d.ts" />
-
 (function (module) {
     'use strict';
 
@@ -68,5 +66,45 @@
     };
 
     module.exports.Worklog = Worklog;
+
+
+    module.exports.validateConf = function (c) {
+        var props = ['srcDir', 'archivePath', 'bulkUrl', 'chunkSize', 'defaultCheckInterval',
+                     'workLogPath'];
+        props.forEach(function (item) {
+            if (c[item] === undefined) {
+                throw new Error(orzo.sprintf('Missing configuration item "%s"', item));
+            }
+        });
+        return c;
+    };
+
+
+    module.exports.fileIsInRange = function (filePath, fromDate, parserFn) {
+        var reader = orzo.reversedFileReader(filePath);
+        var lastLine = null;
+        var parsed = null;
+        var ans = false;
+        while (reader.hasNext()) {
+            lastLine = reader.next();
+            if (lastLine) {
+                parsed = parserFn(lastLine);
+                if (parsed && parsed.isOK()) {
+                    if (parsed.getDate().getTime() / 1000 < fromDate) {
+                        break;
+
+                    } else {
+                        ans = true;
+                        break;
+                    }
+                }
+            }
+        }
+        reader.close();
+        return ans;
+    };
+
+
+
 
 }(module));

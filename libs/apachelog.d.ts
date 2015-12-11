@@ -37,5 +37,5 @@ declare module "apachelog" {
     /**
      */
     export function createParser(lineParser:LineParser, dateParser:DateParser,
-            pathPrefix:string);
+            pathPrefix:string, userMap:{[username:string]:number});
 }

@@ -38,7 +38,7 @@
 
                 if (item) {
                     tmp = item.split('=');
-                    params[tmp[0]] = decodeURIComponent(tmp[1]);
+                    params[decodeURIComponent(tmp[0])] = decodeURIComponent(tmp[1]);
                 }
             });
         }
@@ -163,7 +163,7 @@
         };
     };
 
-    apache.createParser = function (lineParser, dateParser, pathPrefix) {
+    apache.createParser = function (lineParser, dateParser, pathPrefix, userMap) {
         /*
         {
             "user_id": 1980,
@@ -197,7 +197,7 @@
 
                     if (action) {
                         applogItem = {};
-                        applogItem.user_id = null; // cannot fetch from Apache log
+                        applogItem.user_id = userMap[parsedLine.user] || null; // cannot fetch from Apache log
                         applogItem.proc_time = parsedLine.procTime;
                         applogItem.request = {
                             HTTP_USER_AGENT: parsedLine.userAgent,
