@@ -94,15 +94,20 @@
         this._url = url;
         this._itemsPerChunk = itemsPerChunk;
         this._dry_run = dryRun || false;
+        this._print_inserts = false;
     }
 
     BulkInsert.prototype._insert = function (data) {
         if (!this._dry_run) {
             orzo.rest.post(this._url, data.trim());
-
-        } else {
+        }
+        if (this._print_inserts) {
             orzo.printf('---> %s\n', data);
         }
+    };
+
+    BulkInsert.prototype.setPrintInserts = function (v) {
+        this._print_inserts = v;
     };
 
     /**
@@ -121,6 +126,9 @@
         });
         if (buff) {
             this._insert(buff);
+        }
+        if (self._dry_run) {
+            orzo.printf('dummy insert of %d items\n', values.length);
         }
     };
 
