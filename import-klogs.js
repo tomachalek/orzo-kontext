@@ -38,51 +38,6 @@ function validateConf(c) {
     return c;
 }
 
-
-function containsAll(str) {
-    var srch = Array.prototype.slice.call(arguments, 1);
-    return srch.reduce(function (prev, curr) {
-        return prev && str.indexOf(curr) > -1;
-    }, true);
-}
-
-
-function agentIsMonitor(agentStr) {
-    /*
-    Python-urllib/2.7
-    Zabbix-test
-    */
-    agentStr = agentStr ? agentStr.toLowerCase() : '';
-    return containsAll(agentStr, 'python-urllib/2.7')
-        || containsAll(agentStr, 'zabbix-test');
-}
-
-/**
- *
- */
-function agentIsBot(agentStr) {
-    /*
-    Mozilla/5.0 (compatible; Googlebot/2.1; +http://www.google.com/bot.html)
-    Mozilla/5.0 (compatible; AhrefsBot/5.0; +http://ahrefs.com/robot/)
-    Mozilla/5.0 (compatible; YandexBot/3.0; +http://yandex.com/bots)
-    Mozilla/5.0 (compatible; Yahoo! Slurp; http://help.yahoo.com/help/us/ysearch/slurp)
-    Mozilla/5.0 (compatible; Baiduspider/2.0; +http://www.baidu.com/search/spider.html)
-    Mozilla/5.0 (compatible; SeznamBot/3.2; +http://fulltext.sblog.cz/)
-    Mozilla/5.0 (compatible; bingbot/2.0; +http://www.bing.com/bingbot.htm)
-    Mozilla/5.0 (compatible; MegaIndex.ru/2.0; +http://megaindex.com/crawler)
-    */
-    agentStr = agentStr ? agentStr.toLowerCase() : '';
-    return containsAll(agentStr, 'googlebot')
-        || containsAll(agentStr, 'ahrefsbot')
-        || containsAll(agentStr, 'yandexbot')
-        || containsAll(agentStr, 'yahoo', 'slurp')
-        || containsAll(agentStr, 'baiduspider')
-        || containsAll(agentStr, 'seznambot')
-        || containsAll(agentStr, 'bingbot')
-        || containsAll(agentStr, 'megaindex.ru');
-}
-
-
 function fileIsInRange(filePath) {
     var reader = orzo.reversedFileReader(filePath);
     var lastLine = null;
@@ -133,6 +88,11 @@ function isInRange(item) {
     return item.getDate().getTime() / 1000 >= worklog.getLatestTimestamp();
 }
 
+function isHuman(parsed) {
+    return !applog.agentIsMonitor(parsed.getUserAgent())
+            && !applog.agentIsBot(parsed.getUserAgent());
+}
+
 
 map(function (item) {
     doWith(
@@ -143,12 +103,7 @@ map(function (item) {
 
             while (fr.hasNext()) {
                 parsed = applog.parseLine(fr.next());
-                if (parsed
-                        && parsed.isOK()
-                        && isInRange(parsed)
-                        && !agentIsMonitor(parsed.getUserAgent())
-                        && !agentIsBot(parsed.getUserAgent())) {
-
+                if (parsed && parsed.isOK() && isInRange(parsed) && isHuman(parsed)) {
                     converted = rec2elastic.convertRecord(parsed, 'kontext');
                     emit('result', [converted.metadata, converted.data]);
                 }

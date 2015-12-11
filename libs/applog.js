@@ -73,9 +73,6 @@
         }, true);
     }
 
-    /**
-     *
-     */
     lib.agentIsBot = function (agentStr) {
         /*
         Mozilla/5.0 (compatible; Googlebot/2.1; +http://www.google.com/bot.html)
@@ -85,7 +82,8 @@
         Mozilla/5.0 (compatible; Baiduspider/2.0; +http://www.baidu.com/search/spider.html)
         Mozilla/5.0 (compatible; SeznamBot/3.2; +http://fulltext.sblog.cz/)
         Mozilla/5.0 (compatible; bingbot/2.0; +http://www.bing.com/bingbot.htm)
-        /*/
+        Mozilla/5.0 (compatible; MegaIndex.ru/2.0; +http://megaindex.com/crawler)
+        */
         agentStr = agentStr ? agentStr.toLowerCase() : '';
         return containsAll(agentStr, 'googlebot')
             || containsAll(agentStr, 'ahrefsbot')
@@ -93,8 +91,9 @@
             || containsAll(agentStr, 'yahoo', 'slurp')
             || containsAll(agentStr, 'baiduspider')
             || containsAll(agentStr, 'seznambot')
-            || containsAll(agentStr, 'bingbot');
-    }
+            || containsAll(agentStr, 'bingbot')
+            || containsAll(agentStr, 'megaindex.ru');
+    };
 
     /**
      *
