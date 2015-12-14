@@ -90,5 +90,7 @@ reduce(getAttr(conf, 'numReduceWorkers', 1), function (key, values) {
 
 
 finish(function (results) {
-    worklog.close();
+    if (!dryRun) {
+        worklog.close();
+    }
 });
