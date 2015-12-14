@@ -11,7 +11,8 @@
     "workLogPath": ...,
     "numApplyWorkers": ...,
     "numReduceWorkers": ...,
-    "dryRun": true/false
+    "dryRun": true/false,
+    "dateFormat": 0/1
  * }
  *
  */
@@ -63,6 +64,7 @@ map(function (item) {
             while (fr.hasNext()) {
                 parsed = applog.parseLine(fr.next());
                 if (parsed && parsed.isOK() && isInRange(parsed) && applog.agentIsHuman(parsed)) {
+                    parsed.setDateFormat(getAttr(conf, 'dateFormat', 0));
                     converted = rec2elastic.convertRecord(parsed, 'kontext');
                     emit('result', [converted.metadata, converted.data]);
                 }
