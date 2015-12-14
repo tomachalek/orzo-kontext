@@ -34,7 +34,8 @@ declare module "applog" {
         getDate():Date;
 
         /**
-         *
+         * Returns a ISO datetime string. Format details are
+         * specified by setDateFormat().
          */
         getISODate():string;
 
@@ -69,6 +70,16 @@ declare module "applog" {
          * @param date
          */
         isOlderThan(date:Date):boolean;
+
+        /**
+         * Set date format version:
+         * 0 - original version (2015-12-14T18:37:51,931)
+         * 1 - updated version with tz and US decimal separator
+         *     (2015-12-14T18:37:51.931+01:00)
+         *
+         * Default version is '0'.
+         */
+        setDateFormat(f:number):void;
     }
 
     /**
@@ -89,9 +100,15 @@ declare module "applog" {
     export function createRecord(datetime:Date, source:string, type:string, jsonData:string|{[key:string]:any});
 
     /**
-     * Converts a Date instance into an ISO form [year]-[month]-[day]T[hours]:[minutes][seconds],[milliseconds]
+     * Converts a Date instance into an ISO form
+     * [year]-[month]-[day]T[hours]:[minutes][seconds].[milliseconds][timezone offset]
      */
     export function dateToISO(datetime:Date):string;
+
+    /**
+     * Converts a number of seconds to a triple (hours, minutes, seconds).
+     */
+    export function timeToHMS(t:number):Array<number>;
 
     /**
      * Tests whether the provided user-agent string matches any of
