@@ -113,13 +113,26 @@
                 && !lib.agentIsBot(parsed.getUserAgent());
     };
 
+    lib.timeToHMS = function (t) {
+        t = Math.round(t);
+        var h = Math.floor(t / 3600);
+        var m = Math.floor((t % 3600) / 60);
+        var s = t % 60;
+        return [h, m, s];
+    };
+
     /**
      *
      */
     lib.dateToISO = function (d) {
-        return orzo.sprintf('%02d-%02d-%02dT%02d:%02d:%02d,%s',
+        var offs = d.getTimezoneOffset() * 60;
+        var offString = (offs <= 0 ? '+' : '-') +
+                lib.timeToHMS(Math.abs(offs)).slice(0, 2)
+                    .map(function (x) { return x < 10 ? '0' + x.toFixed() : x.toFixed();})
+                    .join(':');
+        return orzo.sprintf('%02d-%02d-%02dT%02d:%02d:%02d.%s%s',
             d.getFullYear(), d.getMonth() + 1,  d.getDate(), d.getHours(),
-            d.getMinutes(), d.getSeconds(), d.getMilliseconds());
+            d.getMinutes(), d.getSeconds(), d.getMilliseconds(), offString);
     };
 
     /**
