@@ -40,7 +40,9 @@ applyItems(function (filePaths, map) {
         currPath = filePaths.next();
 
         if (!proc.fileIsInRange(currPath, worklog.getLatestTimestamp(), applog.parseLine)) {
-            orzo.fs.moveFile(currPath, conf.archivePath);
+            if (!dryRun) {
+                orzo.fs.moveFile(currPath, conf.archivePath);
+            }
 
         } else {
             map(currPath);
