@@ -135,6 +135,12 @@
             d.getMinutes(), d.getSeconds(), d.getMilliseconds(), offString);
     };
 
+    lib.dateToISOPrev = function (d) {
+        return orzo.sprintf('%02d-%02d-%02dT%02d:%02d:%02d,%s',
+            d.getFullYear(), d.getMonth() + 1,  d.getDate(), d.getHours(),
+            d.getMinutes(), d.getSeconds(), d.getMilliseconds());
+    };
+
     /**
      *
      */
@@ -174,6 +180,14 @@
             return orzo.toJson(desc);
         };
 
+        Record.prototype._conf = {
+            dateFormat: 0
+        };
+
+        Record.prototype.setDateFormat = function (f) {
+            this._conf.dateFormat = f;
+        };
+
         Record.prototype._metadata = {
             date : datetime,
             source : source,
@@ -194,8 +208,16 @@
         };
 
         Record.prototype.getISODate = function () {
-            return lib.dateToISO(this.getDate());
-        }
+            if (this._conf.dateFormat === 0) {
+                return lib.dateToISOPrev(this.getDate());
+
+            } else if (this._conf.dateFormat === 1) {
+                return lib.dateToISO(this.getDate());
+
+            } else {
+                throw new Error('Invalid date format ' + this._conf.dateFormat);
+            }
+        };
 
         Record.prototype.getSource = function () {
             return this._metadata.source;
