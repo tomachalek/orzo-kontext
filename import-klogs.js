@@ -33,7 +33,7 @@ dataChunks(getAttr(conf, 'numApplyWorkers', 1), function (idx) {
 });
 
 
-applyItems(function (filePaths, map) {
+processChunk(function (filePaths, map) {
     var currPath;
 
     while (filePaths.hasNext()) {
@@ -41,7 +41,12 @@ applyItems(function (filePaths, map) {
 
         if (!proc.fileIsInRange(currPath, worklog.getLatestTimestamp(), applog.parseLine)) {
             if (!dryRun) {
-                orzo.fs.moveFile(currPath, conf.archivePath);
+                try {
+                    orzo.fs.moveFile(currPath, conf.archivePath);
+
+                } catch (e) {
+                    map({'error': e});
+                }
             }
 
         } else {
@@ -57,26 +62,30 @@ function isInRange(item) {
 
 
 map(function (item) {
-    doWith(
-        orzo.fileReader(item),
-        function (fr) {
-            var parsed,
-                converted;
+    if (typeof item === 'object' && item['error']) {
+        emit('error', item['error']);
 
-            while (fr.hasNext()) {
-                parsed = applog.parseLine(fr.next());
-                if (parsed && parsed.isOK() && isInRange(parsed) && applog.agentIsHuman(parsed)) {
-                    parsed.setDateFormat(getAttr(conf, 'dateFormat', 0));
-                    converted = rec2elastic.convertRecord(parsed, 'kontext');
-                    emit('result', [converted.metadata, converted.data]);
+    } else {
+        doWith(
+            orzo.fileReader(item),
+            function (fr) {
+                var parsed,
+                    converted;
+
+                while (fr.hasNext()) {
+                    parsed = applog.parseLine(fr.next());
+                    if (parsed && parsed.isOK() && isInRange(parsed) && applog.agentIsHuman(parsed)) {
+                        parsed.setDateFormat(getAttr(conf, 'dateFormat', 0));
+                        converted = rec2elastic.convertRecord(parsed, 'kontext');
+                        emit('result', [converted.metadata, converted.data]);
+                    }
                 }
+            },
+            function (err) {
+                orzo.print('error: ' + err);
             }
-        },
-        function (err) {
-            orzo.print('error: ' + err);
-        }
-    );
-
+        );
+    }
 });
 
 
@@ -85,12 +94,23 @@ reduce(getAttr(conf, 'numReduceWorkers', 1), function (key, values) {
         var bulkInsert = new rec2elastic.BulkInsert(conf.bulkUrl, conf.chunkSize, dryRun);
         bulkInsert.setPrintInserts(true);
         bulkInsert.insertValues(values);
+        emit('result', values.length);
+
+    } else if (key === 'error') {
+        emit('errors', values);
     }
 });
 
 
 finish(function (results) {
+    var report = [orzo.sprintf('Inserted %s records', results.get('result')[0])];
+    results.get('errors').slice(0, 10).forEach(function (item) {
+        report.push(item.toString());
+    });
+
     if (!dryRun) {
         worklog.close();
     }
+
+    return JSON.stringify(report);
 });

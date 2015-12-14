@@ -38,7 +38,12 @@
 
                 if (item) {
                     tmp = item.split('=');
-                    params[decodeURIComponent(tmp[0])] = decodeURIComponent(tmp[1]);
+                    try {
+                        params[decodeURIComponent(tmp[0])] = decodeURIComponent(tmp[1]);
+
+                    } catch (ex) {
+                        orzo.print(ex);
+                    }
                 }
             });
         }
