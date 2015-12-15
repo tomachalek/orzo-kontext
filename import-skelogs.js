@@ -13,11 +13,12 @@
     "numReduceWorkers": ...,
     "dryRun": true/false,
     "logFilePattern"
+    "userMapPath": [path to a json or mysql connection URI]
  * }
  *
  */
 
-/// <ref path="./orzojs.d.ts" />
+/// <ref path="./libs/orzojs.d.ts" />
 
 var applog = require('applog');
 var apachelog = require('apachelog');
@@ -34,21 +35,34 @@ var parseLine = apachelog.createParser(
     apachelog.lineParsers.parseSkeLine,
     apachelog.dateParsers.parseYMDDatetime,
     '/ske/run.cgi',
-    orzo.readJsonFile(conf['userMapPath'])
+    getUserMap(conf['userMapPath'])
 );
 var dryRun = getAttr(conf, 'dryRun', true);
 var filePattern = getAttr(conf, 'logFilePattern', '.+');
+var printInserts = false;
 
 
-dataChunks(getAttr(conf, 'numApplyWorkers', 1), function (idx) {
-    return orzo.directoryReader(conf.srcDir, idx, filePattern);
-});
+function getUserMap(src) {
+    var db, rows, row, ans;
+
+    if (src.indexOf('mysql') === 0) {
+        ans = {};
+        db = orzo.db.connect(src);
+        rows = db.select('SELECT user, id FROM user');
+        while (rows.hasNext()) {
+            row = rows.next();
+            ans[row[0]] = row[1];
+        }
+        return ans;
+
+    } else {
+        return orzo.readJsonFile(src)
+    }
+}
 
 
 function gzipFileInRange(path) {
-    var lastParsed;
-    var parsed;
-    var currLine;
+    var lastParsed, parsed;
 
     doWith(orzo.gzipFileReader(path), function (fr) {
         while (fr.hasNext()) {
@@ -69,6 +83,7 @@ function gzipFileInRange(path) {
     return false;
 }
 
+
 function fileIsInRange(path) {
     if (path.indexOf('.gz') === path.length - 3) {
         return gzipFileInRange(path);
@@ -77,6 +92,16 @@ function fileIsInRange(path) {
         return proc.fileIsInRange(path, worklog.getLatestTimestamp(), parseLine);
     }
 }
+
+
+function isInRange(item) {
+    return item.getDate().getTime() / 1000 >= worklog.getLatestTimestamp();
+}
+
+
+dataChunks(getAttr(conf, 'numApplyWorkers', 1), function (idx) {
+    return orzo.directoryReader(conf.srcDir, idx, filePattern);
+});
 
 
 processChunk(function (filePaths, map) {
@@ -102,11 +127,6 @@ processChunk(function (filePaths, map) {
         }
     }
 });
-
-
-function isInRange(item) {
-    return item.getDate().getTime() / 1000 >= worklog.getLatestTimestamp();
-}
 
 
 map(function (item) {
@@ -148,7 +168,7 @@ map(function (item) {
 reduce(getAttr(conf, 'numReduceWorkers', 1), function (key, values) {
     if (key === 'result') {
         var bulkInsert = new rec2elastic.BulkInsert(conf.bulkUrl, conf.chunkSize, dryRun);
-        bulkInsert.setPrintInserts(false);
+        bulkInsert.setPrintInserts(printInserts);
         bulkInsert.insertValues(values);
         emit('result', values.length);
 

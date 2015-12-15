@@ -17,7 +17,7 @@
  *
  */
 
-/// <ref path="./orzojs.d.ts" />
+/// <ref path=".libs/orzojs.d.ts" />
 
 var applog = require('applog');
 var rec2elastic = require('rec2elastic');
