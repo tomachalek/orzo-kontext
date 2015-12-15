@@ -73,7 +73,7 @@
         data.procTime = item.data.proc_time;
         data.action = item.data.action;
         data.entryQuery = isEntryQuery(data.action);
-        data.corpname = corpnameElms[0];
+        data.corpus = corpnameElms[0];
         data.limited = corpnameElms[1];
         data.userAgent = item.getUserAgent();
         data.ipAddress = item.getRemoteAddr();
