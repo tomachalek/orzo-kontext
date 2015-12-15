@@ -11,12 +11,13 @@
     "workLogPath": ...,
     "numApplyWorkers": ...,
     "numReduceWorkers": ...,
-    "dryRun": true/false
+    "dryRun": true/false,
+    "userMapPath": [path to a json or mysql connection URI]
  * }
  *
  */
 
-/// <ref path="./orzojs.d.ts" />
+/// <ref path="./libs/orzojs.d.ts" />
 
 var applog = require('applog');
 var apachelog = require('apachelog');
@@ -32,14 +33,28 @@ var parseLine = apachelog.createParser(
     apachelog.lineParsers.parseSkeLine,
     apachelog.dateParsers.parseYMDDatetime,
     '/ske/run.cgi',
-    orzo.readJsonFile(conf['userMapPath'])
+    getUserMap(conf['userMapPath'])
 );
 var dryRun = getAttr(conf, 'dryRun', true);
 
 
-dataChunks(getAttr(conf, 'numApplyWorkers', 1), function (idx) {
-    return orzo.directoryReader(conf.srcDir, idx);
-});
+function getUserMap(src) {
+    var db, rows, row, ans;
+
+    if (src.indexOf('mysql') === 0) {
+        ans = {};
+        db = orzo.db.connect(src);
+        rows = db.select('SELECT user, id FROM user');
+        while (rows.hasNext()) {
+            row = rows.next();
+            ans[row[0]] = row[1];
+        }
+        return ans;
+
+    } else {
+        return orzo.readJsonFile(src)
+    }
+}
 
 
 function gzipFileInRange(path) {
@@ -71,8 +86,17 @@ function fileIsInRange(path) {
     }
 }
 
+function isInRange(item) {
+    return item.getDate().getTime() / 1000 >= worklog.getLatestTimestamp();
+}
 
-applyItems(function (filePaths, map) {
+
+dataChunks(getAttr(conf, 'numApplyWorkers', 1), function (idx) {
+    return orzo.directoryReader(conf.srcDir, idx);
+});
+
+
+processChunk(function (filePaths, map) {
     var currPath;
 
     while (filePaths.hasNext()) {
@@ -86,11 +110,6 @@ applyItems(function (filePaths, map) {
         }
     }
 });
-
-
-function isInRange(item) {
-    return item.getDate().getTime() / 1000 >= worklog.getLatestTimestamp();
-}
 
 
 map(function (item) {
@@ -134,6 +153,6 @@ reduce(getAttr(conf, 'numReduceWorkers', 1), function (key, values) {
 
 
 finish(function (results) {
-    // TODO worklog.close();
+    worklog.close();
 });
 
