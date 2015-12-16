@@ -17,15 +17,41 @@
  *
  */
 
-/// <ref path=".libs/orzojs.d.ts" />
+/// <ref path="./libs/orzojs.d.ts" />
 
 var applog = require('applog');
 var rec2elastic = require('rec2elastic');
 var proc = require('processing');
 var conf = proc.validateConf(orzo.readJsonFile(env.inputArgs[0]));
 var worklog = new proc.Worklog(conf['workLogPath'],
-        new Date(env.startTimestamp * 1000), 86400);
+        new Date(env.startTimestamp * 1000), getAttr(conf, 'defaultCheckInterval', 86400));
 var dryRun = getAttr(conf, 'dryRun', true);
+var printInserts = true;
+
+var ip2geo = orzo.createIp2Geo();
+
+function getGeoData(ipAddress) {
+    var data;
+
+    try {
+        data = ip2geo(ipAddress);
+
+    } catch (e) {
+        orzo.print(e);
+        data = {};
+    }
+    return {
+        continent_code: null, // TODO
+        country_code2: data.countryISO,
+        country_code3: null,
+        country_name: data.countryName,
+        ip: ipAddress,
+        latitude: data.latitude,
+        location: [data.latitude, data.longitude],
+        longitude: data.longitude,
+        timezone: null // TODO
+    };
+}
 
 
 dataChunks(getAttr(conf, 'numApplyWorkers', 1), function (idx) {
@@ -38,7 +64,6 @@ processChunk(function (filePaths, map) {
 
     while (filePaths.hasNext()) {
         currPath = filePaths.next();
-
         if (!proc.fileIsInRange(currPath, worklog.getLatestTimestamp(), applog.parseLine)) {
             if (!dryRun) {
                 try {
@@ -76,7 +101,7 @@ map(function (item) {
                     parsed = applog.parseLine(fr.next());
                     if (parsed && parsed.isOK() && isInRange(parsed) && applog.agentIsHuman(parsed)) {
                         parsed.setDateFormat(getAttr(conf, 'dateFormat', 0));
-                        converted = rec2elastic.convertRecord(parsed, 'kontext');
+                        converted = rec2elastic.convertRecord(parsed, 'kontext', getGeoData(parsed.getRemoteAddr()));
                         emit('result', [converted.metadata, converted.data]);
                     }
                 }
@@ -92,7 +117,7 @@ map(function (item) {
 reduce(getAttr(conf, 'numReduceWorkers', 1), function (key, values) {
     if (key === 'result') {
         var bulkInsert = new rec2elastic.BulkInsert(conf.bulkUrl, conf.chunkSize, dryRun);
-        bulkInsert.setPrintInserts(true);
+        bulkInsert.setPrintInserts(printInserts);
         bulkInsert.insertValues(values);
         emit('result', values.length);
 

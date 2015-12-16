@@ -61,9 +61,10 @@
      * Converts an applog record to CNK's internal format
      * designed for storing an application request information.
      */
-    lib.convertRecord = function (item, type) {
+    lib.convertRecord = function (item, type, geoInfo) {
         var corpnameElms;
         var data = {};
+        geoInfo = geoInfo || {};
 
         corpnameElms = importCorpname(item);
 
@@ -77,6 +78,7 @@
         data.limited = corpnameElms[1];
         data.userAgent = item.getUserAgent();
         data.ipAddress = item.getRemoteAddr();
+        data.geoip = geoInfo;
 
         var meta = lib.createMetaRecord(data, type);
 
