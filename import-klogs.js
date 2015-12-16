@@ -40,17 +40,7 @@ function getGeoData(ipAddress) {
         orzo.print(e);
         data = {};
     }
-    return {
-        continent_code: null, // TODO
-        country_code2: data.countryISO,
-        country_code3: null,
-        country_name: data.countryName,
-        ip: ipAddress,
-        latitude: data.latitude,
-        location: [data.latitude, data.longitude],
-        longitude: data.longitude,
-        timezone: null // TODO
-    };
+    return data;
 }
 
 
