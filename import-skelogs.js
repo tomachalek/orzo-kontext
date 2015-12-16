@@ -41,6 +41,21 @@ var dryRun = getAttr(conf, 'dryRun', true);
 var filePattern = getAttr(conf, 'logFilePattern', '.+');
 var printInserts = false;
 
+var ip2geo = orzo.createIp2Geo();
+
+function getGeoData(ipAddress) {
+    var data;
+
+    try {
+        data = ip2geo(ipAddress);
+
+    } catch (e) {
+        orzo.print(e);
+        data = {};
+    }
+    return data;
+}
+
 
 function getUserMap(src) {
     var db, rows, row, ans;
@@ -151,7 +166,7 @@ map(function (item) {
                     parsed = parseLine(fr.next());
                     if (parsed && parsed.isOK() && isInRange(parsed) && applog.agentIsHuman(parsed)) {
                         parsed.setDateFormat(1);
-                        converted = rec2elastic.convertRecord(parsed, 'ske');
+                        converted = rec2elastic.convertRecord(parsed, 'ske', getGeoData(parsed.getRemoteAddr()));
                         emit('result', [converted.metadata, converted.data]);
                     }
                 }

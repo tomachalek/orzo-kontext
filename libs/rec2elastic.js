@@ -57,13 +57,28 @@
         }
     }
 
+    function importGeoData(ipAddress, data) {
+        return {
+            continent_code: null, // TODO
+            country_code2: data.countryISO,
+            country_code3: null,
+            country_name: data.countryName,
+            ip: ipAddress,
+            latitude: data.latitude,
+            location: [data.latitude, data.longitude],
+            longitude: data.longitude,
+            timezone: null // TODO
+        };
+    }
+
     /**
      * Converts an applog record to CNK's internal format
      * designed for storing an application request information.
      */
-    lib.convertRecord = function (item, type) {
+    lib.convertRecord = function (item, type, geoInfo) {
         var corpnameElms;
         var data = {};
+        geoInfo = geoInfo || {};
 
         corpnameElms = importCorpname(item);
 
@@ -77,6 +92,7 @@
         data.limited = corpnameElms[1];
         data.userAgent = item.getUserAgent();
         data.ipAddress = item.getRemoteAddr();
+        data.geoip = importGeoData(data.ipAddress, geoInfo);
 
         var meta = lib.createMetaRecord(data, type);
 
