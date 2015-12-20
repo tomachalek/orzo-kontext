@@ -83,6 +83,10 @@
         Mozilla/5.0 (compatible; SeznamBot/3.2; +http://fulltext.sblog.cz/)
         Mozilla/5.0 (compatible; bingbot/2.0; +http://www.bing.com/bingbot.htm)
         Mozilla/5.0 (compatible; MegaIndex.ru/2.0; +http://megaindex.com/crawler)
+        Mozilla/5.0 (compatible; MJ12bot/v1.4.5; http://www.majestic12.co.uk/bot.php?+)
+        Y!J-ASR/0.1 crawler (http://www.yahoo-help.jp/app/answers/detail/p/595/a_id/42716/)
+        ltx71 - (http://ltx71.com/)
+        Mozilla/5.0 (compatible; Exabot/3.0; +http://www.exabot.com/go/robot)
         */
         agentStr = agentStr ? agentStr.toLowerCase() : '';
         return containsAll(agentStr, 'googlebot')
@@ -92,7 +96,11 @@
             || containsAll(agentStr, 'baiduspider')
             || containsAll(agentStr, 'seznambot')
             || containsAll(agentStr, 'bingbot')
-            || containsAll(agentStr, 'megaindex.ru');
+            || containsAll(agentStr, 'megaindex.ru')
+            || containsAll(agentStr, 'mj12bot', 'majestic')
+            || containsAll(agentStr, 'asr', 'yahoo-help')
+            || containsAll(agentStr, 'ltx71')
+            || containsAll(agentStr, 'exabot', 'robot');
     };
 
     /**

@@ -122,4 +122,9 @@ declare module "applog" {
      */
     export function agentIsMonitor(agentStr:string):boolean;
 
+    /**
+     * 
+     */
+    export function agentIsHuman(agentStr:string):boolean;
+
 }
