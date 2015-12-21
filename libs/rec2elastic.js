@@ -65,7 +65,7 @@
             country_name: data.countryName,
             ip: ipAddress,
             latitude: data.latitude,
-            location: [data.latitude, data.longitude],
+            location: [data.longitude, data.latitude],
             longitude: data.longitude,
             timezone: null // TODO
         };
