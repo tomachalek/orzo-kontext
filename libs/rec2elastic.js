@@ -114,11 +114,11 @@
     }
 
     BulkInsert.prototype._insert = function (data) {
-        if (!this._dry_run) {
-            orzo.rest.post(this._url, data.trim());
-        }
         if (this._print_inserts) {
             orzo.printf('---> %s\n', data);
+        }
+        if (!this._dry_run) {
+            orzo.rest.post(this._url, data.trim());
         }
     };
 

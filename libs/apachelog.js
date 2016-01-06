@@ -124,13 +124,12 @@
         return null;
     };
 
-
     // 2001:718:1e03:ffc1::17 - - [15/Feb/2015:02:21:39 +0100]
     // "GET /first_form?corpname=omezeni/syn2010 HTTP/1.1" 200
     // 126627 "-" "Zabbix-test" t=707870
 
     lineParsers.parseLine = function (line) {
-        var regexp = /([0-9a-f:\.]+)\s+-\s-\s\[([^\]]+)\]\s+"([^"]+)"\s+(\d+)\s+(\d+)\s+"([^"]+)"\s+"([^"]+)"\s+t=(\d+)(\s+pid=\d+)?/,
+        var regexp = /([0-9a-f:\.]+)\s+-\s-\s\[([^\]]+)\]\s+"([^"]+)"\s+(\d+)\s+(\d+)\s+"([^"]+)"\s+"([^"]+)"\s+t=(\d+)?(\s+pid=\d+)?/,
             ans,
             pref,
             q;
@@ -147,6 +146,34 @@
                 time: ans[2],
                 userAgent: ans[7],
                 procTime: parseInt(ans[8]) / 1e6,
+                query: q
+            }
+        }
+        return null;
+    };
+
+    // 2001:718:1e03:ffc1::17 - - [15/Feb/2015:02:21:39 +0100]
+    // "GET /first_form?corpname=omezeni/syn2010 HTTP/1.1" 200
+    // 126627 "-" "Zabbix-test"
+
+    lineParsers.parseLine2014 = function (line) {
+        var regexp = /([0-9a-f:\.]+)\s+-\s-\s\[([^\]]+)\]\s+"([^"]+)"\s+(\d+)\s+(\d+)\s+"([^"]+)"\s+"([^"]+)"(\s+t=(\d+))?(\s+pid=\d+)?/,
+            ans,
+            pref,
+            q;
+
+         line = line.replace(/\\"/g, '#');
+         ans = regexp.exec(line);
+
+        if (ans) {
+            pref = /^([^\s]+)/.exec(ans[1]);
+            q = ans[3].split(' ')[1];
+            q = q.replace(/#/g, '\\"');
+            return {
+                ip: pref ? pref[1] : null,
+                time: ans[2],
+                userAgent: ans[7],
+                procTime: ans[9] ? parseInt(ans[9]) / 1e6 : null,
                 query: q
             }
         }

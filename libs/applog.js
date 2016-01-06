@@ -215,7 +215,7 @@
                 return lib.dateToISO(this.getDate());
 
             } else {
-                throw new Error('Invalid date format ' + this._conf.dateFormat);
+                throw new Error('Invalid date format version: ' + this._conf.dateFormat);
             }
         };
 
