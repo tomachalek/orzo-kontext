@@ -80,6 +80,11 @@ declare module "applog" {
          * Default version is '0'.
          */
         setDateFormat(f:number):void;
+
+        /**
+         * @return one of {basic, lemma, phrase, word, char, cql}
+         */
+        getQueryType():string;
     }
 
     /**

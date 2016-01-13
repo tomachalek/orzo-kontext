@@ -32,7 +32,7 @@
     };
 
     function isEntryQuery(action) {
-        return ['first', 'wordlist'].indexOf(action) >= 0;
+        return ['first', 'wordlist', 'wsketch', 'thes', 'wsdiff'].indexOf(action) >= 0;
     }
 
     function importCorpname(item) {
@@ -87,7 +87,8 @@
         data.userId = item.data.user_id;
         data.procTime = item.data.proc_time;
         data.action = item.data.action;
-        data.entryQuery = isEntryQuery(data.action);
+        data.isQuery = isEntryQuery(data.action);
+        data.queryType = item.getQueryType();
         data.corpus = corpnameElms[0];
         data.limited = corpnameElms[1];
         data.userAgent = item.getUserAgent();
