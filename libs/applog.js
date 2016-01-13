@@ -261,6 +261,23 @@
             return this.timestamp() < timestamp;
         };
 
+        Record.prototype.getQueryType = function () {
+           var types = {
+               iqueryrow: 'basic',
+               lemmarow: 'lemma',
+               phraserow: 'phrase',
+               wordrow: 'word',
+               charrow: 'char',
+               cqlrow: 'cql'
+           };
+           var params = this.data.params || {};
+
+           if (params['queryselector']) {
+               return types[params['queryselector']] || null;
+           }
+           return null;
+        };
+
         return new Record(data);
     };
 
