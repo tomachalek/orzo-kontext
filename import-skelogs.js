@@ -39,7 +39,8 @@ var parseLine = apachelog.createParser(
 );
 var dryRun = getAttr(conf, 'dryRun', true);
 var filePattern = getAttr(conf, 'logFilePattern', '.+');
-var printInserts = false;
+var printInserts = getAttr(conf, 'printInserts', false);
+var anonymousId = getAttr(conf, 'anonymousUserId', 0);
 
 var ip2geo = orzo.createIp2Geo();
 
@@ -166,7 +167,8 @@ map(function (item) {
                     parsed = parseLine(fr.next());
                     if (parsed && parsed.isOK() && isInRange(parsed) && applog.agentIsHuman(parsed)) {
                         parsed.setDateFormat(1);
-                        converted = rec2elastic.convertRecord(parsed, 'ske', getGeoData(parsed.getRemoteAddr()));
+                        converted = rec2elastic.convertRecord(parsed, 'ske',
+                                anonymousId, getGeoData(parsed.getRemoteAddr()));
                         emit('result', [converted.metadata, converted.data]);
                     }
                 }

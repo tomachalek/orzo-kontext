@@ -26,7 +26,8 @@ var conf = proc.validateConf(orzo.readJsonFile(env.inputArgs[0]));
 var worklog = new proc.Worklog(conf['workLogPath'],
         new Date(env.startTimestamp * 1000), getAttr(conf, 'defaultCheckInterval', 86400));
 var dryRun = getAttr(conf, 'dryRun', true);
-var printInserts = false;
+var printInserts = getAttr(conf, 'printInserts', false);
+var anonymousId = getAttr(conf, 'anonymousUserId', 0);
 
 var ip2geo = orzo.createIp2Geo();
 
@@ -75,6 +76,13 @@ function isInRange(item) {
     return item.getDate().getTime() / 1000 >= worklog.getLatestTimestamp();
 }
 
+function isValid(item) {
+    return item
+            && item.isOK()
+            && item.getType() === 'INFO'
+            && isInRange(item)
+            && applog.agentIsHuman(item)
+}
 
 map(function (item) {
     if (typeof item === 'object' && item['error']) {
@@ -84,14 +92,17 @@ map(function (item) {
         doWith(
             orzo.fileReader(item),
             function (fr) {
-                var parsed,
+                var line,
+                    parsed,
                     converted;
 
                 while (fr.hasNext()) {
-                    parsed = applog.parseLine(fr.next());
-                    if (parsed && parsed.isOK() && isInRange(parsed) && applog.agentIsHuman(parsed)) {
+                    line = fr.next();
+                    parsed = applog.parseLine(line);
+                    if (isValid(parsed)) {
                         parsed.setDateFormat(getAttr(conf, 'dateFormat', 0));
-                        converted = rec2elastic.convertRecord(parsed, 'kontext', getGeoData(parsed.getRemoteAddr()));
+                        converted = rec2elastic.convertRecord(parsed, 'kontext',
+                            anonymousId, getGeoData(parsed.getRemoteAddr()));
                         emit('result', [converted.metadata, converted.data]);
                     }
                 }

@@ -75,7 +75,7 @@
      * Converts an applog record to CNK's internal format
      * designed for storing an application request information.
      */
-    lib.convertRecord = function (item, type, geoInfo) {
+    lib.convertRecord = function (item, type, anonymousId, geoInfo) {
         var corpnameElms;
         var data = {};
         geoInfo = geoInfo || {};
@@ -89,7 +89,7 @@
         data.action = item.data.action;
         data.isQuery = isEntryQuery(data.action);
         if (data.userId) {
-            data.isAnonymous = (parseInt(data.userId, 10) === 4230);
+            data.isAnonymous = (parseInt(data.userId, 10) === anonymousId);
 
         } else {
             data.isAnonymous = null;
@@ -100,7 +100,7 @@
         data.limited = corpnameElms[1];
         data.userAgent = item.getUserAgent();
         data.ipAddress = item.getRemoteAddr();
- 
+
         if (data.ipAddress && data.ipAddress.indexOf(':') === -1) {
             data.geoip = importGeoData(data.ipAddress, geoInfo);
 
