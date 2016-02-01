@@ -240,6 +240,9 @@
                             corpname: corpusMeta.corpname,
                             subcname: corpusMeta.subcname
                         }
+                        if (corpusMeta['queryselector']) {
+                            applogItem.params['queryselector'] = corpusMeta['queryselector'];
+                        }
                         record = applog.createRecord(
                             dateParser(parsedLine.time),
                             null,  // there is no source Python module available
