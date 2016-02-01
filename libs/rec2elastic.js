@@ -88,12 +88,25 @@
         data.procTime = item.data.proc_time;
         data.action = item.data.action;
         data.isQuery = isEntryQuery(data.action);
+        if (data.userId) {
+            data.isAnonymous = (parseInt(data.userId, 10) === 4230);
+
+        } else {
+            data.isAnonymous = null;
+        }
+        data.args = {};
         data.queryType = item.getQueryType();
         data.corpus = corpnameElms[0];
         data.limited = corpnameElms[1];
         data.userAgent = item.getUserAgent();
         data.ipAddress = item.getRemoteAddr();
-        data.geoip = importGeoData(data.ipAddress, geoInfo);
+ 
+        if (data.ipAddress && data.ipAddress.indexOf(':') === -1) {
+            data.geoip = importGeoData(data.ipAddress, geoInfo);
+
+        } else {
+            data.geoip = {};
+        }
 
         var meta = lib.createMetaRecord(data, type);
 

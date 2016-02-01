@@ -26,7 +26,7 @@ var conf = proc.validateConf(orzo.readJsonFile(env.inputArgs[0]));
 var worklog = new proc.Worklog(conf['workLogPath'],
         new Date(env.startTimestamp * 1000), getAttr(conf, 'defaultCheckInterval', 86400));
 var dryRun = getAttr(conf, 'dryRun', true);
-var printInserts = true;
+var printInserts = false;
 
 var ip2geo = orzo.createIp2Geo();
 
@@ -57,7 +57,7 @@ processChunk(function (filePaths, map) {
         if (!proc.fileIsInRange(currPath, worklog.getLatestTimestamp(), applog.parseLine)) {
             if (!dryRun) {
                 try {
-                    orzo.fs.moveFile(currPath, conf.archivePath);
+                    //orzo.fs.moveFile(currPath, conf.archivePath);
 
                 } catch (e) {
                     map({'error': e});
