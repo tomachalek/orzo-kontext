@@ -219,6 +219,10 @@
             }
         };
 
+        Record.prototype.getParams = function () {
+            return this.data.params || {};
+        };
+
         Record.prototype.getSource = function () {
             return this._metadata.source;
         };
