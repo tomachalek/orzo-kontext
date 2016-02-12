@@ -101,7 +101,9 @@
         data.userAgent = item.getUserAgent();
         data.ipAddress = item.getRemoteAddr();
 
-        if (data.ipAddress && data.ipAddress.indexOf(':') === -1) {
+        if (data.ipAddress 
+                && data.ipAddress.indexOf(':') === -1 
+                && data.ipAddress !== '127.0.0.1') {
             data.geoip = importGeoData(data.ipAddress, geoInfo);
 
         } else {

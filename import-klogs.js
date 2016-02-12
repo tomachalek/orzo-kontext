@@ -38,7 +38,7 @@ function getGeoData(ipAddress) {
         data = ip2geo(ipAddress);
 
     } catch (e) {
-        orzo.print(e);
+        orzo.print('ignoring unknown IP ' + ipAddress);
         data = {};
     }
     return data;
